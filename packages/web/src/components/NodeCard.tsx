@@ -18,6 +18,7 @@ export default function NodeCard({ node, onDelete }: NodeCardProps) {
         <h3 className="font-semibold text-lg">{node.name}</h3>
         <button
           onClick={onDelete}
+          aria-label={`Delete node ${node.name}`}
           className="text-red-400 hover:text-red-300 text-sm"
         >
           Delete
