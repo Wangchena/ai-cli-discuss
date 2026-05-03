@@ -36,11 +36,12 @@ export interface Message {
   fromNode: string;
   type: MessageType;
   content: string;
+  round?: number;              // Discussion round (1, 2, 3)
   replyTo?: string;
   timestamp: Date;
 }
 
-export type MessageType = 'proposal' | 'comment' | 'vote' | 'decision' | 'result';
+export type MessageType = 'proposal' | 'revision' | 'comment' | 'vote' | 'consensus' | 'decision' | 'result';
 
 export interface Vote {
   nodeId: string;

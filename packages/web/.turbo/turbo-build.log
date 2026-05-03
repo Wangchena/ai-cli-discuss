@@ -1,0 +1,13 @@
+
+> @ai-cli-link/web@0.0.1 build /Users/chen/Documents/ai-cli-link/packages/web
+> tsc && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 32 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.40 kB │ gzip:  0.28 kB
+dist/assets/index-CpG8GKVV.css    9.19 kB │ gzip:  2.36 kB
+dist/assets/index-CARYK0yu.js   146.60 kB │ gzip: 47.16 kB
+✓ built in 768ms

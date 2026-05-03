@@ -1,45 +1,42 @@
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import NodeManagement from './pages/NodeManagement';
-import TaskCanvas from './pages/TaskCanvas';
-import Monitoring from './pages/Monitoring';
+import { useState, useEffect } from 'react';
+import DiscussionMonitor from './components/DiscussionMonitor';
 
 export default function App() {
-  const location = useLocation();
+  const [taskId, setTaskId] = useState<string | null>(null);
 
-  const navItems = [
-    { path: '/nodes', label: 'Nodes' },
-    { path: '/tasks', label: 'Tasks' },
-    { path: '/monitor', label: 'Monitor' },
-  ];
+  // Check URL params for task ID
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('task');
+    if (id) {
+      setTaskId(id);
+    }
+  }, []);
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-56 bg-slate-900 border-r border-slate-700 p-4">
-        <h1 className="text-xl font-bold text-white mb-6">AI-CLI-Link</h1>
-        <nav className="space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`block px-3 py-2 rounded text-sm transition-colors ${
-                location.pathname === item.path
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-2xl font-bold text-gray-900">AI-CLI-Link Monitor</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {taskId ? `Task: ${taskId}` : 'Waiting for task...'}
+          </p>
+        </div>
+      </header>
 
-      <main className="flex-1 p-6 overflow-auto">
-        <Routes>
-          <Route path="/nodes" element={<NodeManagement />} />
-          <Route path="/tasks" element={<TaskCanvas />} />
-          <Route path="/monitor" element={<Monitoring />} />
-          <Route path="*" element={<NodeManagement />} />
-        </Routes>
+      <main className="max-w-6xl mx-auto p-6">
+        {taskId ? (
+          <DiscussionMonitor taskId={taskId} />
+        ) : (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <p className="text-gray-600">
+              No active task. Start a discussion from the terminal:
+            </p>
+            <pre className="bg-gray-100 rounded p-4 mt-4 text-left text-sm">
+              <code>ai-cli-link "your task description"</code>
+            </pre>
+          </div>
+        )}
       </main>
     </div>
   );
