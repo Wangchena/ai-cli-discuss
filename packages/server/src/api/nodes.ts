@@ -34,12 +34,12 @@ nodesRouter.get('/:id', (c) => {
   return c.json(node);
 });
 
-nodesRouter.put('/:id', (c) => {
+nodesRouter.put('/:id', async (c) => {
   const id = c.req.param('id');
   const existing = nodes.get(id);
   if (!existing) return c.json({ error: 'Node not found' }, 404);
 
-  const body = c.req.json() as Partial<Node>;
+  const body = await c.req.json<Partial<Node>>();
   nodes.set(id, { ...existing, ...body });
   return c.json(nodes.get(id)!);
 });

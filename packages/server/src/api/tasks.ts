@@ -14,12 +14,12 @@ export function createTasksRouter(
     return c.json(taskManager.getAllTasks());
   });
 
-  router.post('/', (c) => {
-    const body = c.req.json() as {
+  router.post('/', async (c) => {
+    const body = await c.req.json<{
       title: string;
       description: string;
       assignedNodes: string[];
-    };
+    }>();
 
     const task = taskManager.createTask(body);
     return c.json(task, 201);
@@ -45,9 +45,9 @@ export function createTasksRouter(
     return c.json({ task, skipDiscussion: result.skipDiscussion });
   });
 
-  router.post('/:id/message', (c) => {
+  router.post('/:id/message', async (c) => {
     const taskId = c.req.param('id');
-    const body = c.req.json() as Omit<Message, 'taskId' | 'timestamp'>;
+    const body = await c.req.json<Omit<Message, 'taskId' | 'timestamp'>>();
 
     const message: Message = {
       ...body,
