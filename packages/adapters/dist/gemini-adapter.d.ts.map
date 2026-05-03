@@ -1,0 +1,1 @@
+{"version":3,"file":"gemini-adapter.d.ts","sourceRoot":"","sources":["../src/gemini-adapter.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,cAAc,EAAE,MAAM,gBAAgB,CAAC;AAEhD,qBAAa,aAAc,SAAQ,cAAc;IAC/C,SAAS,CAAC,UAAU,IAAI,MAAM;IAI9B,SAAS,CAAC,YAAY,CAAC,IAAI,EAAE,MAAM,GAAG,MAAM;CAG7C"}

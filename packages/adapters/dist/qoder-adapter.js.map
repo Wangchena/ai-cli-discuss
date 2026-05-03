@@ -1,0 +1,1 @@
+{"version":3,"file":"qoder-adapter.js","sourceRoot":"","sources":["../src/qoder-adapter.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,cAAc,EAAE,MAAM,gBAAgB,CAAC;AAEhD,MAAM,OAAO,YAAa,SAAQ,cAAc;IACpC,UAAU;QAClB,OAAO,OAAO,CAAC;IACjB,CAAC;IAES,YAAY,CAAC,IAAY;QACjC,OAAO,IAAI,CAAC;IACd,CAAC;CACF"}
