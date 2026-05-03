@@ -1,0 +1,17 @@
+
+> @ai-cli-link/core@0.0.1 test /Users/chen/Documents/ai-cli-link/packages/core
+> vitest run
+
+
+ RUN  v2.1.9 /Users/chen/Documents/ai-cli-link/packages/core
+
+ ✓ test/consensus.test.ts (5 tests) 3ms
+ ✓ test/orchestrator.test.ts (5 tests) 2ms
+ ✓ test/message-bus.test.ts (7 tests) 3ms
+ ✓ test/task-manager.test.ts (6 tests) 4ms
+
+ Test Files  4 passed (4)
+      Tests  23 passed (23)
+   Start at  18:31:03
+   Duration  396ms (transform 63ms, setup 0ms, collect 88ms, tests 12ms, environment 0ms, prepare 172ms)
+

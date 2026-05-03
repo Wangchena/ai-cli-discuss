@@ -1,6 +1,4 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
-const execAsync = promisify(exec);
+import { spawn } from 'child_process';
 export class BaseCliAdapter {
     node;
     constructor(node) {
@@ -13,47 +11,54 @@ export class BaseCliAdapter {
         this.updateStatus('busy');
         const command = this.getCommand();
         const prompt = this.formatPrompt(task);
-        const fullCommand = `${command} "${prompt}"`;
         const timeout = this.node.config.timeout ?? 30000;
-        try {
-            const { stdout, stderr } = await execAsync(fullCommand, {
-                timeout,
+        return new Promise((resolve) => {
+            const child = spawn(command, [prompt]);
+            let stdout = '';
+            let stderr = '';
+            let timedOut = false;
+            child.stdout?.on('data', (data) => {
+                stdout += data.toString();
             });
-            this.updateStatus('idle');
-            return {
-                stdout,
-                stderr,
-                exitCode: 0,
-                timedOut: false,
-            };
-        }
-        catch (error) {
-            const err = error;
-            // Detect timeout: Node.js sets err.killed = true when the timeout fires
-            // and kills the child process. Also check for ETIMEDOUT/ETIMEOUT codes
-            // for older Node.js versions.
-            const isTimeout = err.killed === true ||
-                err.code === 'ETIMEDOUT' ||
-                err.code === 'ETIMEOUT' ||
-                err.code === 'ERR_CHILD_PROCESS_TIMEOUT';
-            if (isTimeout) {
+            child.stderr?.on('data', (data) => {
+                stderr += data.toString();
+            });
+            const timeoutId = setTimeout(() => {
+                timedOut = true;
+                child.kill('SIGTERM');
+            }, timeout);
+            child.on('close', (code) => {
+                clearTimeout(timeoutId);
+                if (timedOut) {
+                    this.updateStatus('error');
+                    resolve({
+                        stdout,
+                        stderr: 'Execution timed out',
+                        exitCode: -1,
+                        timedOut: true,
+                    });
+                }
+                else {
+                    this.updateStatus('idle');
+                    resolve({
+                        stdout,
+                        stderr,
+                        exitCode: code ?? 0,
+                        timedOut: false,
+                    });
+                }
+            });
+            child.on('error', (err) => {
+                clearTimeout(timeoutId);
                 this.updateStatus('error');
-                return {
-                    stdout: err.stdout ?? '',
-                    stderr: 'Execution timed out',
+                resolve({
+                    stdout,
+                    stderr: stderr || err.message,
                     exitCode: -1,
-                    timedOut: true,
-                };
-            }
-            const exitCode = err.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' ? -1 : 1;
-            this.updateStatus('error');
-            return {
-                stdout: err.stdout ?? '',
-                stderr: err.stderr ?? String(error),
-                exitCode,
-                timedOut: false,
-            };
-        }
+                    timedOut: false,
+                });
+            });
+        });
     }
     updateStatus(status) {
         this.node.status = status;

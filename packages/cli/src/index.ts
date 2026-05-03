@@ -32,7 +32,7 @@ async function loadConfig(): Promise<CliConfig> {
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args.length === 0) {
+  if (args.length === 0 || args.includes('--help')) {
     console.log('AI-CLI-Link - Multi-CLI Orchestration System');
     console.log('');
     console.log('Usage:');
@@ -40,11 +40,11 @@ async function main() {
     console.log('');
     console.log('Options:');
     console.log('  --help     Show this help message');
-    console.log('  --config   Path to config file (default: .ai-cli-link.json)');
+    console.log('  --mock     Use mock responses (for testing without CLI tools)');
     console.log('');
     console.log('Examples:');
     console.log('  ai-cli-link "Refactor packages/core to improve code quality"');
-    console.log('  ai-cli-link "Analyze the security of our API endpoints"');
+    console.log('  ai-cli-link --mock "Test task"');
     console.log('');
     console.log('Configuration:');
     console.log('  Create .ai-cli-link.json in your project root:');
@@ -52,13 +52,9 @@ async function main() {
     process.exit(0);
   }
 
-  if (args.includes('--help')) {
-    process.argv = ['node', 'ai-cli-link'];
-    await main();
-    return;
-  }
-
-  const task = args.join(' ');
+  const useMock = args.includes('--mock');
+  const taskArgs = args.filter(a => a !== '--mock' && a !== '--');
+  const task = taskArgs.join(' ');
   const config = await loadConfig();
 
   console.log('========================================');
@@ -76,43 +72,79 @@ async function main() {
   console.log(`Monitor: http://localhost:${config.port}`);
   console.log('');
 
-  // Start discussion
-  console.log('Launching discussion...');
-  try {
-    const result = await discussionOrchestrator.startDiscussion(task, {
-      nodes: config.nodes.map(n => ({
-        type: n.type as any,
-        count: n.count,
-        timeout: 120000,
-      })),
-      maxRounds: config.maxRounds,
-    });
-
+  if (useMock) {
+    console.log('Launching discussion (mock mode)...');
+    console.log('(Simulating CLI responses)');
     console.log('');
+
+    const mockProposal = `Task: ${task}
+
+Proposal:
+1. Analyze the current code structure and identify key components
+2. Identify areas for improvement (code quality, tests, documentation)
+3. Implement refactoring incrementally with proper testing
+4. Update documentation to reflect changes
+
+This approach ensures code quality while maintaining functionality.`;
+
     console.log('========================================');
     console.log('Consensus Reached!');
     console.log('========================================');
     console.log('');
-    console.log(result.proposal);
+    console.log(mockProposal);
     console.log('');
-    console.log(`Task ID: ${result.taskId}`);
-    console.log(`Full discussion: http://localhost:${config.port}?task=${result.taskId}`);
+    console.log('Task ID: mock-task-123');
+    console.log(`Full discussion: http://localhost:${config.port}?task=mock-task-123`);
     console.log('');
 
-    // Save result
     const outputFile = join(process.cwd(), 'ai-cli-link-result.json');
     writeFileSync(
       outputFile,
-      JSON.stringify({ task, consensus: result.proposal, taskId: result.taskId }, null, 2)
+      JSON.stringify({ task, consensus: mockProposal, taskId: 'mock-task-123', mock: true }, null, 2)
     );
     console.log(`Result saved to: ${outputFile}`);
-
-  } catch (error: any) {
-    console.error('');
-    console.error('Error:', error.message);
-    process.exit(1);
-  } finally {
     discussionOrchestrator.cleanup();
+  } else {
+    // Start discussion with real CLI instances
+    console.log('Launching discussion...');
+    try {
+      const result = await discussionOrchestrator.startDiscussion(task, {
+        nodes: config.nodes.map(n => ({
+          type: n.type as any,
+          count: n.count,
+          timeout: 120000,
+        })),
+        maxRounds: config.maxRounds,
+      });
+
+      console.log('');
+      console.log('========================================');
+      console.log('Consensus Reached!');
+      console.log('========================================');
+      console.log('');
+      console.log(result.proposal);
+      console.log('');
+      console.log(`Task ID: ${result.taskId}`);
+      console.log(`Full discussion: http://localhost:${config.port}?task=${result.taskId}`);
+      console.log('');
+
+      const outputFile = join(process.cwd(), 'ai-cli-link-result.json');
+      writeFileSync(
+        outputFile,
+        JSON.stringify({ task, consensus: result.proposal, taskId: result.taskId }, null, 2)
+      );
+      console.log(`Result saved to: ${outputFile}`);
+
+    } catch (error: any) {
+      console.error('');
+      console.error('Error:', error.message);
+      console.error('');
+      console.error('Tip: Use --mock mode to test without actual CLI tools:');
+      console.error('  ai-cli-link --mock "your task"');
+      process.exit(1);
+    } finally {
+      discussionOrchestrator.cleanup();
+    }
   }
 }
 

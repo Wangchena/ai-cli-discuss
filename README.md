@@ -16,15 +16,11 @@ A multi-CLI orchestration system that allows you to input a single requirement, 
 # Install dependencies
 pnpm install
 
-# Run a task
-pnpm start -- "Refactor packages/core to improve code quality"
-```
+# Run a task (mock mode for testing)
+pnpm start -- --mock "Refactor packages/core to improve code quality"
 
-Or use the CLI directly after building:
-
-```bash
-pnpm build
-./packages/cli/dist/index.js "Analyze the security of our API"
+# Run with actual CLI tools (requires claude/gemini/qoder installed and configured)
+pnpm start -- "Analyze the security of our API"
 ```
 
 ## How It Works
