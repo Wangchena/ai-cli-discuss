@@ -1,56 +1,73 @@
 ---
-title: AI-CLI-Link Wiki Index
+title: AI-CLI-Link Wiki
 created: '2026-05-05'
 updated: '2026-05-05'
-description: Index of all wiki pages for the AI-CLI-Link project
+description: Complete documentation for the AI-CLI-Link multi-CLI orchestration system
 tags:
   - index
-  - overview
+  - documentation
 ---
 
-# AI-CLI-Link Wiki Index
+# AI-CLI-Link Wiki
 
 ## Overview
 
-AI-CLI-Link is a multi-CLI orchestration system where you submit tasks through a chat-like web interface, and multiple AI CLI instances (Claude, Gemini, Qoder) discuss and reach consensus before executing.
+AI-CLI-Link is a multi-CLI orchestration system where multiple AI CLI instances (Claude, Gemini, Qoder) discuss tasks, propose solutions, and reach consensus through a structured discussion protocol.
 
-## Pages by Category
+---
 
-### Project Documentation
+## Sources
 
-- [README](../README.md) - Project overview, features, quick start, and architecture
-- [AGENTS.md](../AGENTS.md) - Agent instructions and development conventions
-- [SCHEMA.md](../SCHEMA.md) - Schema documentation
+- [[wiki/sources/project-overview.md]] - Project overview, features, and quick start
+- [[wiki/sources/claude-auth-fix.md]] - Claude CLI authentication fix and mock mode
 
-### Bug Fixes
+## Entities
 
-- [Claude CLI Authentication Fix](../bugs/claude-auth-fix.md) - Fix for Claude CLI auth issues and mock mode implementation
+*(No entities documented yet)*
 
-### Design Documents
+## Concepts
 
-- [AI-CLI-Link Design](../docs/superpowers/specs/2026-05-03-ai-cli-link-design.md) - Original system design specification
-- [Simplified CLI Orchestrator Design](../docs/superpowers/specs/2026-05-03-simplified-cli-orchestrator-design.md) - Refactored lightweight orchestrator design
-- [Implementation Plan](../docs/superpowers/plans/2026-05-03-ai-cli-link-implementation.md) - Implementation plan and task breakdown
+- [[wiki/concepts/message-protocol.md]] - Message types and discussion flow
+- [[wiki/concepts/discussion-orchestrator.md]] - How the orchestrator coordinates discussions
 
-### Rules and Configuration
+## Synthesis
 
-- [Wiki Usage Rules](../.qoder/rules/wiki.md) - Rules for using llmwiki-cli in this project
+- [[wiki/synthesis/ai-cli-link-architecture.md]] - Detailed system architecture and package structure
+
+---
 
 ## Quick Links
 
-- [Project Repository](https://github.com/your-repo/ai-cli-link)
 - [Getting Started](../README.md#quick-start)
-- [Mock Mode Guide](../bugs/claude-auth-fix.md#usage)
+- [Architecture Overview](../README.md#architecture)
+- [Mock Mode Guide](wiki/sources/claude-auth-fix.md)
+
+## Project Structure
+
+```
+ai-cli-link/
+├── packages/
+│   ├── core/              # Message bus, consensus engine, types
+│   ├── adapters/          # CLI adapters + instance manager
+│   ├── server/            # Hono API + orchestrator
+│   ├── web/               # React chat UI
+│   └── cli/               # CLI entry point
+├── wiki/                  # This wiki
+│   ├── sources/           # Source documentation
+│   ├── concepts/          # Core concepts
+│   └── synthesis/         # Cross-cutting analysis
+└── docs/                  # Design documents
+```
 
 ## Wiki Statistics
 
-- Total Pages: 9
-- Bug Reports: 1
-- Design Documents: 3
-- Rules: 1
+- Total Pages: 14
+- Sources: 2
+- Concepts: 2  
+- Synthesis: 1
+- Index: 1
+- External pages: 8
 
-## Notes
+---
 
-This index is automatically managed by llmwiki-cli. Page locations are relative to the project root.
-
-For more information about wiki usage, see [Wiki Usage Rules](../.qoder/rules/wiki.md).
+*This index is managed by llmwiki-cli*
