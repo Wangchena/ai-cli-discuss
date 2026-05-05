@@ -5,12 +5,12 @@
 
  RUN  v2.1.9 /Users/chen/Documents/ai-cli-link/packages/adapters
 
- ✓ test/instance-manager.test.ts (6 tests) 5ms
- ✓ test/base-adapter.test.ts (6 tests) 1123ms
-   ✓ BaseCliAdapter > should update node status to busy while executing 1010ms
+ ✓ test/instance-manager.test.ts (6 tests) 2ms
+ ✓ test/base-adapter.test.ts (6 tests) 1126ms
+   ✓ BaseCliAdapter > should update node status to busy while executing 1012ms
 
  Test Files  2 passed (2)
       Tests  12 passed (12)
-   Start at  18:31:04
-   Duration  1.39s (transform 29ms, setup 0ms, collect 35ms, tests 1.13s, environment 0ms, prepare 85ms)
+   Start at  10:28:21
+   Duration  1.38s (transform 29ms, setup 0ms, collect 34ms, tests 1.13s, environment 0ms, prepare 84ms)
 

@@ -5,10 +5,10 @@
 
  RUN  v2.1.9 /Users/chen/Documents/ai-cli-link/packages/server
 
- ✓ test/api.test.ts (3 tests) 12ms
+ ✓ test/api.test.ts (3 tests) 5ms
 
  Test Files  1 passed (1)
       Tests  3 passed (3)
-   Start at  18:31:04
-   Duration  442ms (transform 111ms, setup 0ms, collect 155ms, tests 12ms, environment 0ms, prepare 34ms)
+   Start at  10:28:21
+   Duration  300ms (transform 37ms, setup 0ms, collect 62ms, tests 5ms, environment 0ms, prepare 38ms)
 
