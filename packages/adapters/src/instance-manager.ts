@@ -1,8 +1,18 @@
 import { Node, NodeType } from '@ai-cli-link/core';
 import { spawn, ChildProcess } from 'child_process';
-import { mkdirSync, rmSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { rmSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+// __dirname is packages/adapters/src
+// ../../.. goes up to project root (ai-cli-link)
+const projectRoot = join(__dirname, '../../..');
+
+const MOCK_MODE = process.env.MOCK_MODE === '1';
+
+// Log mock mode status on import
+console.log(`[InstanceManager] MOCK_MODE=${MOCK_MODE}, process.env.MOCK_MODE=${process.env.MOCK_MODE}`);
 
 export interface CLIInstance {
   id: string;
@@ -51,9 +61,9 @@ export class InstanceManager {
   }
 
   private createTempDir(id: string): string {
-    const dir = join(tmpdir(), `ai-cli-link-${id}-${Date.now()}`);
-    mkdirSync(dir, { recursive: true });
-    return dir;
+    // Use project root directory instead of temp directory
+    // This ensures Claude CLI can access authentication state from ~/.claude/projects/
+    return projectRoot;
   }
 
   async executeInstance(
@@ -62,6 +72,19 @@ export class InstanceManager {
     timeoutMs: number = 120000
   ): Promise<string> {
     instance.status = 'running';
+
+    // Mock mode: return simulated response without executing CLI
+    if (MOCK_MODE) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      instance.status = 'done';
+      return `[${instance.id} MOCK] Analysis of: "${prompt.slice(0, 50)}..."
+      
+Proposal:
+1. Analyze requirements thoroughly
+2. Design modular architecture
+3. Implement with test-driven development
+4. Review and refine based on feedback`;
+    }
 
     return new Promise((resolve, reject) => {
       const command = this.getCommand(instance.type);
@@ -99,7 +122,7 @@ export class InstanceManager {
           reject(new Error(`Instance ${instance.id} timed out after ${timeoutMs}ms`));
         } else if (code !== 0) {
           instance.status = 'error';
-          reject(new Error(`Instance ${instance.id} failed with code ${code}: ${stderr}`));
+          reject(new Error(`Instance ${instance.id} failed: ${stderr}`));
         } else {
           instance.status = 'done';
           resolve(stdout.trim());
@@ -144,10 +167,13 @@ export class InstanceManager {
   cleanup(): void {
     for (const [id, instance] of this.instances.entries()) {
       this.killInstance(id);
-      try {
-        rmSync(instance.workDir, { recursive: true, force: true });
-      } catch {
-        // Ignore cleanup errors
+      // Don't delete project root directory
+      if (instance.workDir !== projectRoot) {
+        try {
+          rmSync(instance.workDir, { recursive: true, force: true });
+        } catch {
+          // Ignore cleanup errors
+        }
       }
     }
     this.instances.clear();

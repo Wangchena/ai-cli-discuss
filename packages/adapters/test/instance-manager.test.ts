@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { InstanceManager } from '../src/instance-manager';
-import { tmpdir } from 'os';
-import { existsSync, rmSync } from 'fs';
-import { join } from 'path';
+import { existsSync } from 'fs';
 
 describe('InstanceManager', () => {
   let manager: InstanceManager;
@@ -38,15 +36,17 @@ describe('InstanceManager', () => {
     expect(instances[1].id).toBe('gemini-1');
   });
 
-  it('should create unique temp directories', async () => {
+  it('should use project directory for all instances (for CLI auth)', async () => {
     const instances = await manager.spawnInstances([
       { type: 'claude', count: 2 }
     ]);
 
-    expect(instances[0].workDir).not.toBe(instances[1].workDir);
+    // All instances share the same project directory for authentication
+    expect(instances[0].workDir).toBe(instances[1].workDir);
+    expect(instances[0].workDir).toContain('ai-cli-link');
   });
 
-  it('should cleanup temp directories', async () => {
+  it('should not delete project directory on cleanup', async () => {
     const instances = await manager.spawnInstances([
       { type: 'claude', count: 1 }
     ]);
@@ -54,7 +54,8 @@ describe('InstanceManager', () => {
     const workDir = instances[0].workDir;
     manager.cleanup();
 
-    expect(existsSync(workDir)).toBe(false);
+    // Project directory should still exist
+    expect(existsSync(workDir)).toBe(true);
   });
 
   it('should return instances list', async () => {

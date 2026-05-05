@@ -1,41 +1,37 @@
-import { useState, useEffect } from 'react';
-import DiscussionMonitor from './components/DiscussionMonitor';
+import { useState } from 'react';
+import TaskChat from './components/TaskChat';
+import TaskMonitor from './components/TaskMonitor';
 
 export default function App() {
+  const [mode, setMode] = useState<'input' | 'monitor'>('input');
   const [taskId, setTaskId] = useState<string | null>(null);
-
-  // Check URL params for task ID
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('task');
-    if (id) {
-      setTaskId(id);
-    }
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900">AI-CLI-Link Monitor</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {taskId ? `Task: ${taskId}` : 'Waiting for task...'}
-          </p>
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">AI-CLI-Link</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Multi-CLI Orchestration System
+            </p>
+          </div>
+          {mode === 'monitor' && taskId && (
+            <button
+              onClick={() => { setMode('input'); setTaskId(null); }}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              + New Task
+            </button>
+          )}
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-6">
-        {taskId ? (
-          <DiscussionMonitor taskId={taskId} />
+      <main className="max-w-4xl mx-auto">
+        {mode === 'input' ? (
+          <TaskChat onTaskStart={(id) => { setTaskId(id); setMode('monitor'); }} />
         ) : (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-600">
-              No active task. Start a discussion from the terminal:
-            </p>
-            <pre className="bg-gray-100 rounded p-4 mt-4 text-left text-sm">
-              <code>ai-cli-link "your task description"</code>
-            </pre>
-          </div>
+          taskId && <TaskMonitor taskId={taskId} />
         )}
       </main>
     </div>

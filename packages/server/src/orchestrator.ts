@@ -102,6 +102,13 @@ export class DiscussionOrchestrator {
       )
     );
 
+    // Log any errors for debugging
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        console.error(`Instance ${instances[i].id} failed:`, r.reason);
+      }
+    });
+
     return results
       .filter((r) => r.status === 'fulfilled')
       .map((r) => (r as PromiseFulfilledResult<Message>).value);

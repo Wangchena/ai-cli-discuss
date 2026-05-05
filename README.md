@@ -1,13 +1,14 @@
 # AI-CLI-Link
 
-A multi-CLI orchestration system that allows you to input a single requirement, automatically launches multiple AI CLI instances (Claude, Gemini, Qoder) for discussion and mutual refinement, reaches consensus through a shared message bus, and collaboratively executes the task upon your confirmation.
+A multi-CLI orchestration system where you submit tasks through a chat-like web interface, and multiple AI CLI instances (Claude, Gemini, Qoder) discuss and reach consensus before executing.
 
 ## Features
 
-- **One-Command Launch**: `ai-cli-link "your task"` - that's it
+- **Chat-Style Task Submission**: Describe your task in the web UI, no terminal needed
+- **Persistent Server**: Server runs continuously, serving both API and frontend
 - **Multi-Instance Discussion**: Automatically spawns 2+ CLI instances that generate proposals, review each other's work, and refine approaches through 2-3 rounds
 - **Consensus Engine**: Majority voting with configurable rounds, automatic merge of best ideas
-- **Web Monitor**: Real-time discussion stream and consensus display at `http://localhost:3000`
+- **Real-Time Monitoring**: Watch the discussion unfold via WebSocket
 - **Secure Execution**: Uses `child_process.spawn()` instead of `exec()` to prevent shell injection
 
 ## Quick Start
@@ -16,23 +17,54 @@ A multi-CLI orchestration system that allows you to input a single requirement, 
 # Install dependencies
 pnpm install
 
-# Run a task (mock mode for testing)
-pnpm start -- --mock "Refactor packages/core to improve code quality"
+# Start the server (runs continuously on port 3000)
+pnpm start
 
-# Run with actual CLI tools (requires claude/gemini/qoder installed and configured)
-pnpm start -- "Analyze the security of our API"
+# Open browser at http://localhost:3000
+# Submit your task through the chat interface
 ```
+
+### Mock Mode (Testing Without CLI Authentication)
+
+If your CLI tools are not authenticated, use mock mode to test the workflow:
+
+```bash
+# Start server with mock responses
+pnpm start:mock
+
+# Open browser at http://localhost:3000
+# Submit tasks - will use simulated responses for testing
+```
+
+## Prerequisites
+
+### CLI Authentication
+
+For the system to work with real CLI tools, ensure they are authenticated:
+
+- **Claude CLI**: Configure API key in `~/.claude/settings.json`:
+  ```json
+  {
+    "env": {
+      "ANTHROPIC_API_KEY": "your-api-key",
+      "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic"
+    }
+  }
+  ```
+
+- **Gemini CLI**: Ensure Google authentication is configured
+- **Qoder CLI**: Configure according to Qoder documentation
 
 ## How It Works
 
 ```
-1. User inputs task via CLI
-2. System spawns N CLI instances (default: 2x Claude)
-3. Round 1: Each instance generates independent proposal
-4. Round 2-3: Instances review others' proposals, refine their own
-5. Consensus: Best proposal selected (or merged)
-6. Web Monitor: Real-time discussion stream displayed
-7. Result: Consensus saved to ai-cli-link-result.json
+1. User opens http://localhost:3000
+2. User describes task in the chat interface
+3. System spawns N CLI instances (default: 2x Claude)
+4. Round 1: Each instance generates independent proposal
+5. Round 2-3: Instances review others' proposals, refine their own
+6. Consensus: Best proposal selected (or merged)
+7. Results displayed in real-time on the web page
 ```
 
 ## Configuration
@@ -44,8 +76,7 @@ Create `.ai-cli-link.json` in your project root:
   "nodes": [
     { "type": "claude", "count": 2 }
   ],
-  "maxRounds": 3,
-  "port": 3000
+  "maxRounds": 3
 }
 ```
 
@@ -54,24 +85,22 @@ Supported node types: `claude`, `gemini`, `qoder`
 ## Architecture
 
 ```
-┌─────────────────┐
-│   CLI Entry      │  ai-cli-link "task"
-└────────┬────────┘
-         │
-┌────────▼──────────────┐
-│  Discussion Orchestrator │
-│  - InstanceManager      │
-│  - MessageBus           │
-│  - ConsensusEngine      │
-└──┬───────┬───────┬─────┘
+┌─────────────────────────┐
+│   Web UI (Chat)          │  http://localhost:3000
+│   - Task input           │
+│   - Real-time monitor    │
+└──────────┬──────────────┘
+           │ HTTP + WebSocket
+┌──────────▼──────────────┐
+│   Hono Server            │  Port 3000 (HTTP)
+│   - API routes           │  Port 3001 (WS)
+│   - Static file serving  │
+│   - Discussion orchestr  │
+└──┬───────┬───────┬──────┘
    │       │       │
 ┌──▼──┐ ┌─▼────┐ ┌▼────┐
 │C-1  │ │C-2   │ │G-1  │  CLI instances
 └─────┘ └──────┘ └─────┘
-         │
-┌────────▼───────────┐
-│  Web Monitor       │  http://localhost:3000
-└────────────────────┘
 ```
 
 ## Project Structure
@@ -80,9 +109,9 @@ Supported node types: `claude`, `gemini`, `qoder`
 packages/
 ├── core/              # Message bus, consensus engine, types
 ├── adapters/          # CLI adapters + instance manager
-├── server/            # Hono API + discussion orchestrator
-├── web/               # Single-page monitor (React + Vite)
-└── cli/               # Command-line entry point
+├── server/            # Hono API + discussion orchestrator + static serving
+├── web/               # React chat UI (built into server dist)
+└── cli/               # Legacy CLI entry point
 ```
 
 ## Tech Stack
@@ -99,7 +128,7 @@ packages/
 ## Development
 
 ```bash
-# Start dev servers
+# Start dev servers (hot reload)
 pnpm dev
 
 # Run tests
@@ -108,8 +137,8 @@ pnpm test
 # Build for production
 pnpm build
 
-# Type check
-pnpm typecheck
+# Start production server
+pnpm start
 ```
 
 ## License
