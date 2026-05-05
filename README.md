@@ -1,3 +1,14 @@
+---
+title: AI-CLI-Link
+created: '2026-05-05'
+updated: '2026-05-05'
+description: Multi-CLI orchestration system with chat-style web interface, persistent server, and consensus-driven task execution
+tags:
+  - overview
+  - architecture
+  - getting-started
+---
+
 # AI-CLI-Link
 
 A multi-CLI orchestration system where you submit tasks through a chat-like web interface, and multiple AI CLI instances (Claude, Gemini, Qoder) discuss and reach consensus before executing.
@@ -9,6 +20,7 @@ A multi-CLI orchestration system where you submit tasks through a chat-like web 
 - **Multi-Instance Discussion**: Automatically spawns 2+ CLI instances that generate proposals, review each other's work, and refine approaches through 2-3 rounds
 - **Consensus Engine**: Majority voting with configurable rounds, automatic merge of best ideas
 - **Real-Time Monitoring**: Watch the discussion unfold via WebSocket
+- **Mock Mode**: Test the workflow without CLI authentication using simulated responses
 - **Secure Execution**: Uses `child_process.spawn()` instead of `exec()` to prevent shell injection
 
 ## Quick Start
@@ -35,25 +47,6 @@ pnpm start:mock
 # Open browser at http://localhost:3000
 # Submit tasks - will use simulated responses for testing
 ```
-
-## Prerequisites
-
-### CLI Authentication
-
-For the system to work with real CLI tools, ensure they are authenticated:
-
-- **Claude CLI**: Configure API key in `~/.claude/settings.json`:
-  ```json
-  {
-    "env": {
-      "ANTHROPIC_API_KEY": "your-api-key",
-      "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic"
-    }
-  }
-  ```
-
-- **Gemini CLI**: Ensure Google authentication is configured
-- **Qoder CLI**: Configure according to Qoder documentation
 
 ## How It Works
 
@@ -82,10 +75,18 @@ Create `.ai-cli-link.json` in your project root:
 
 Supported node types: `claude`, `gemini`, `qoder`
 
+## CLI Authentication
+
+For the system to work with real CLI tools, ensure they are authenticated:
+
+- **Claude CLI**: Configure API key in `~/.claude/settings.json`
+- **Gemini CLI**: Ensure Google authentication is configured
+- **Qoder CLI**: Configure according to Qoder documentation
+
 ## Architecture
 
 ```
-┌─────────────────────────┐
+─────────────────────────┐
 │   Web UI (Chat)          │  http://localhost:3000
 │   - Task input           │
 │   - Real-time monitor    │
@@ -139,7 +140,14 @@ pnpm build
 
 # Start production server
 pnpm start
+
+# Start with mock mode (no CLI auth needed)
+pnpm start:mock
 ```
+
+## Bug Fixes
+
+- [Claude CLI Authentication Fix](bugs/claude-auth-fix.md) - Fixed work directory issue and added mock mode
 
 ## License
 
