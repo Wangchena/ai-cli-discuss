@@ -11,9 +11,6 @@ const projectRoot = join(__dirname, '../../..');
 
 const MOCK_MODE = process.env.MOCK_MODE === '1';
 
-// Log mock mode status on import
-console.log(`[InstanceManager] MOCK_MODE=${MOCK_MODE}, process.env.MOCK_MODE=${process.env.MOCK_MODE}`);
-
 export interface CLIInstance {
   id: string;
   type: NodeType;
