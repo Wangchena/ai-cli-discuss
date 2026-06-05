@@ -1,0 +1,7 @@
+name: ai-cli-link
+domain: general
+created: '2026-05-05T09:29:47.371Z'
+paths:
+  raw: raw
+  wiki: wiki
+  schema: SCHEMA.md

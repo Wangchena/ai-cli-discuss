@@ -20,6 +20,7 @@ AI-CLI-Link is a multi-CLI orchestration system where multiple AI CLI instances 
 
 - [[wiki/sources/project-overview.md]] - Project overview, features, and quick start
 - [[wiki/sources/claude-auth-fix.md]] - Claude CLI authentication fix and mock mode
+- [[wiki/sources/qoder-cli-config.md]] - Qoder CLI configuration, command fix, and discussion test
 
 ## Entities
 

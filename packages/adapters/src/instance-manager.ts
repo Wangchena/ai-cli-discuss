@@ -142,7 +142,7 @@ Proposal:
       case 'gemini':
         return 'gemini';
       case 'qoder':
-        return 'qoder';
+        return 'qodercli';
       default:
         throw new Error(`Unsupported CLI type: ${type}`);
     }

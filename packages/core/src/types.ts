@@ -39,6 +39,7 @@ export interface Message {
   round?: number;              // Discussion round (1, 2, 3)
   replyTo?: string;
   timestamp: Date;
+  metadata?: Record<string, unknown>;
 }
 
 export type MessageType = 'proposal' | 'revision' | 'comment' | 'vote' | 'consensus' | 'decision' | 'result';

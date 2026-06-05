@@ -16,7 +16,7 @@ export default function App() {
               Multi-CLI Orchestration System
             </p>
           </div>
-          {mode === 'monitor' && taskId && (
+          {mode === 'monitor' && (
             <button
               onClick={() => { setMode('input'); setTaskId(null); }}
               className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -27,11 +27,14 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto">
+      <main className={mode === 'monitor' ? 'w-full' : 'max-w-4xl mx-auto'}>
         {mode === 'input' ? (
-          <TaskChat onTaskStart={(id) => { setTaskId(id); setMode('monitor'); }} />
+          <TaskChat
+            onTaskStart={(id) => { setTaskId(id); setMode('monitor'); }}
+            onOpenDiscussion={(id) => { setTaskId(id); setMode('monitor'); }}
+          />
         ) : (
-          taskId && <TaskMonitor taskId={taskId} />
+          taskId && <TaskMonitor taskId={taskId} onBack={() => { setMode('input'); setTaskId(null); }} />
         )}
       </main>
     </div>

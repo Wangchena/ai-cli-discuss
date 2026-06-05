@@ -1,5 +1,7 @@
 node_modules/
 dist/
-*.local
-*.json
 .turbo/
+.discussion-history/
+*.local
+*.env
+ai-cli-link-result.json

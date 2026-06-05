@@ -33,30 +33,80 @@ app.post('/api/discuss', async (c) => {
     config: {
       nodes: Array<{ type: string; count: number }>;
       maxRounds?: number;
+      roles?: string[];
+      prompts?: string[];
     };
   }>();
 
   try {
-    const result = await discussionOrchestrator.startDiscussion(
+    const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+    if (wsHandler) {
+      wsHandler.broadcastTaskUpdate(taskId, {
+        id: taskId,
+        title: body.task.slice(0, 50),
+        status: 'discussing',
+        round: 0,
+        maxRounds: body.config.maxRounds ?? 3,
+      });
+    }
+
+    discussionOrchestrator.startDiscussion(
       body.task,
       {
         nodes: body.config.nodes.map((n) => ({
           type: n.type as any,
           count: n.count,
-          timeout: 120000,
+          timeout: 30000,
         })),
         maxRounds: body.config.maxRounds ?? 3,
+        roles: body.config.roles,
+        prompts: body.config.prompts,
+        taskId,
       }
-    );
-
-    return c.json({
-      success: true,
-      taskId: result.taskId,
-      consensus: result.proposal,
+    ).catch((error) => {
+      console.error('Discussion failed:', error);
+      if (wsHandler) {
+        wsHandler.broadcastTaskUpdate(taskId, {
+          status: 'failed',
+          error: error.message,
+        });
+      }
     });
+
+    return c.json({ success: true, taskId });
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500);
   }
+});
+
+// Continue existing discussion with user input
+app.post('/api/discuss/:taskId/continue', async (c) => {
+  const taskId = c.req.param('taskId');
+  const body = await c.req.json<{ message: string }>();
+
+  try {
+    const result = await discussionOrchestrator.continueDiscussion(taskId, body.message);
+    return c.json({ success: true, taskId, messages: result.allProposals });
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Get discussion history
+app.get('/api/discuss/:taskId', (c) => {
+  const taskId = c.req.param('taskId');
+  const history = discussionOrchestrator.getDiscussionHistory(taskId);
+  if (!history) {
+    return c.json({ success: false, error: 'Discussion not found' }, 404);
+  }
+  return c.json({ success: true, ...history });
+});
+
+// List all discussions
+app.get('/api/discuss', (c) => {
+  const discussions = discussionOrchestrator.listDiscussions();
+  return c.json({ success: true, discussions });
 });
 
 app.get('/health', (c) => c.json({ status: 'ok' }));

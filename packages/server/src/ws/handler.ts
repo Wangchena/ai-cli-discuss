@@ -32,14 +32,18 @@ export class WsHandler {
   }
 
   subscribe(taskId: string, ws: WebSocket): void {
+    console.log(`[WS] Client subscribing to task: ${taskId}`);
     if (!this.taskSubscriptions.has(taskId)) {
       this.taskSubscriptions.set(taskId, new Set());
     }
     this.taskSubscriptions.get(taskId)!.add(ws);
+    console.log(`[WS] Total subscribers for ${taskId}: ${this.taskSubscriptions.get(taskId)!.size}`);
   }
 
   broadcastToTask(taskId: string, message: Message): void {
+    console.log(`[WS] Attempting to broadcast to task: ${taskId}`);
     const subs = this.taskSubscriptions.get(taskId);
+    console.log(`[WS] Subscribers found: ${subs ? subs.size : 0}`);
     if (!subs) return;
 
     const payload = JSON.stringify({
@@ -49,6 +53,20 @@ export class WsHandler {
     });
 
     subs.forEach((ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(payload);
+      }
+    });
+  }
+
+  broadcastMessage(message: Message): void {
+    const payload = JSON.stringify({
+      type: 'message',
+      taskId: message.taskId,
+      data: message,
+    });
+
+    this.clients.forEach((ws) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(payload);
       }
