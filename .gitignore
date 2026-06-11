@@ -2,6 +2,7 @@ node_modules/
 dist/
 .turbo/
 .discussion-history/
+.qoder/
 *.local
 *.env
 ai-cli-link-result.json
