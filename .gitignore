@@ -5,3 +5,4 @@ dist/
 *.local
 *.env
 ai-cli-link-result.json
+.DS_Store

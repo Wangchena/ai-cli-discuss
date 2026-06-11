@@ -3,14 +3,17 @@
   "version": "0.0.1",
   "type": "module",
   "bin": {
-    "ai-cli-link": "dist/index.js"
+    "ai-cli-link": "dist/index.js",
+    "cli-discuss": "dist/discuss.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts"
+    "start": "tsx src/index.ts",
+    "discuss": "tsx src/discuss.ts"
   },
   "dependencies": {
+    "@ai-cli-link/core": "workspace:*",
     "@ai-cli-link/server": "workspace:*"
   },
   "devDependencies": {

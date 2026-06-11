@@ -292,6 +292,7 @@ export default function TaskChat({ onTaskStart, onOpenDiscussion }: TaskChatProp
             <option value="qoder">Qoder</option>
             <option value="claude">Claude</option>
             <option value="gemini">Gemini</option>
+            <option value="deepseek">DeepSeek</option>
           </select>
           <span className="text-gray-400">×</span>
           <span className="font-medium text-gray-900">{getTotalInstances() || 0}</span>

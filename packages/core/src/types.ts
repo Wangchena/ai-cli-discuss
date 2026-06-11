@@ -27,7 +27,7 @@ export interface Node {
   capabilities: string[];
 }
 
-export type NodeType = 'qoder' | 'claude' | 'gemini' | 'custom';
+export type NodeType = 'qoder' | 'claude' | 'gemini' | 'deepseek' | 'custom';
 export type NodeStatus = 'idle' | 'busy' | 'error';
 
 export interface Message {

@@ -9,11 +9,9 @@ tags:
   - getting-started
 ---
 
-# AI-CLI-Link 🤖
+# AI-CLI-Link
 
 A multi-CLI orchestration system where you submit tasks through a chat-like web interface, and multiple AI CLI instances (Claude, Gemini, Qoder) discuss and reach consensus before executing.
-
-> 中文版请见 [README.zh.md](./README.zh.md) | [English](./README.md)
 
 ## Features
 

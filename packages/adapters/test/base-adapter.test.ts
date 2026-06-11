@@ -4,13 +4,8 @@ import { Node } from '@ai-cli-link/core';
 
 // Concrete test subclass
 class TestAdapter extends BaseCliAdapter {
-  protected getCommand(): string {
-    return 'echo';
-  }
-
-  protected formatPrompt(task: string): string {
-    return task;
-  }
+  protected getCommand(): string { return 'echo'; }
+  protected getArgs(task: string): string[] { return [task]; }
 }
 
 describe('BaseCliAdapter', () => {
@@ -35,12 +30,8 @@ describe('BaseCliAdapter', () => {
 
   it('should update node status to busy while executing', async () => {
     class SlowCheckAdapter extends BaseCliAdapter {
-      protected getCommand(): string {
-        return 'sleep';
-      }
-      protected formatPrompt(): string {
-        return '1';
-      }
+      protected getCommand(): string { return 'sleep'; }
+      protected getArgs(): string[] { return ['1']; }
     }
 
     const slowNode: Node = { ...testNode, config: { timeout: 5000 } };
@@ -66,12 +57,8 @@ describe('BaseCliAdapter', () => {
 
   it('should handle execution errors', async () => {
     class FailingAdapter extends BaseCliAdapter {
-      protected getCommand(): string {
-        return 'nonexistent-command-xyz';
-      }
-      protected formatPrompt(task: string): string {
-        return task;
-      }
+      protected getCommand(): string { return 'nonexistent-command-xyz'; }
+      protected getArgs(task: string): string[] { return [task]; }
     }
 
     const failing = new FailingAdapter(testNode);
@@ -82,12 +69,8 @@ describe('BaseCliAdapter', () => {
 
   it('should respect timeout', async () => {
     class SlowAdapter extends BaseCliAdapter {
-      protected getCommand(): string {
-        return 'sleep';
-      }
-      protected formatPrompt(): string {
-        return '10';
-      }
+      protected getCommand(): string { return 'sleep'; }
+      protected getArgs(): string[] { return ['10']; }
     }
 
     const slowNode: Node = {

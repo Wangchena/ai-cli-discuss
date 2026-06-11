@@ -33,6 +33,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@ai-cli-link/core':
+        specifier: workspace:*
+        version: link:../core
       '@ai-cli-link/server':
         specifier: workspace:*
         version: link:../server

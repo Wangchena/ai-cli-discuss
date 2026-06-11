@@ -10,7 +10,9 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "start": "pnpm --filter @ai-cli-link/server start",
-    "start:mock": "pnpm --filter @ai-cli-link/server start:mock"
+    "start:mock": "pnpm --filter @ai-cli-link/server start:mock",
+    "discuss": "pnpm --filter @ai-cli-link/cli discuss",
+    "discuss:mock": "pnpm --filter @ai-cli-link/cli discuss -- --mock"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

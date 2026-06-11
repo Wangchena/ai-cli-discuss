@@ -1,5 +1,5 @@
 import { Node, NodeStatus } from '@ai-cli-link/core';
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 
 export interface ExecutionResult {
   stdout: string;
@@ -8,8 +8,11 @@ export interface ExecutionResult {
   timedOut: boolean;
 }
 
+const MOCK_MODE = process.env.MOCK_MODE === '1';
+
 export abstract class BaseCliAdapter {
   protected node: Node;
+  protected childProcess: ChildProcess | null = null;
 
   constructor(node: Node) {
     this.node = node;
@@ -22,12 +25,32 @@ export abstract class BaseCliAdapter {
   async execute(task: string): Promise<ExecutionResult> {
     this.updateStatus('busy');
 
+    // Mock mode: return simulated response
+    if (MOCK_MODE) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      this.updateStatus('idle');
+      return {
+        stdout: `[${this.node.id} MOCK] Analysis of: "${task.slice(0, 50)}..."
+
+Proposal:
+1. Analyze requirements thoroughly
+2. Design modular architecture
+3. Implement with test-driven development
+4. Review and refine based on feedback`,
+        stderr: '',
+        exitCode: 0,
+        timedOut: false,
+      };
+    }
+
+    const args = this.getArgs(task);
     const command = this.getCommand();
-    const prompt = this.formatPrompt(task);
     const timeout = (this.node.config.timeout as number) ?? 30000;
+    const cwd = (this.node.config.cwd as string) || undefined;
 
     return new Promise((resolve) => {
-      const child = spawn(command, [prompt]);
+      this.childProcess = spawn(command, args, { cwd, env: { ...process.env } });
+      const child = this.childProcess!;
 
       let stdout = '';
       let stderr = '';
@@ -48,6 +71,7 @@ export abstract class BaseCliAdapter {
 
       child.on('close', (code) => {
         clearTimeout(timeoutId);
+        this.childProcess = null;
         if (timedOut) {
           this.updateStatus('error');
           resolve({
@@ -69,6 +93,7 @@ export abstract class BaseCliAdapter {
 
       child.on('error', (err) => {
         clearTimeout(timeoutId);
+        this.childProcess = null;
         this.updateStatus('error');
         resolve({
           stdout,
@@ -81,7 +106,15 @@ export abstract class BaseCliAdapter {
   }
 
   protected abstract getCommand(): string;
-  protected abstract formatPrompt(task: string): string;
+  protected abstract getArgs(task: string): string[];
+
+  /** Kill the running child process if any */
+  kill(): void {
+    if (this.childProcess) {
+      this.childProcess.kill('SIGTERM');
+      this.childProcess = null;
+    }
+  }
 
   private updateStatus(status: NodeStatus): void {
     this.node.status = status;

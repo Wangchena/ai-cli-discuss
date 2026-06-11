@@ -1,4 +1,6 @@
 import { MessageBus, Message, TaskStatus } from '@ai-cli-link/core';
+import { ConsensusEngine, ConsensusResult as CoreConsensusResult } from '@ai-cli-link/core';
+import { Orchestrator as CoreOrchestrator, TaskManager } from '@ai-cli-link/core';
 import { InstanceManager, InstanceConfig, CLIInstance } from '@ai-cli-link/adapters';
 import { WsHandler } from './ws/handler';
 import { writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
@@ -63,6 +65,9 @@ export class DiscussionOrchestrator {
   private bus: MessageBus;
   private instanceManager: InstanceManager;
   private wsHandler: WsHandler | null;
+  private consensusEngine: ConsensusEngine | null = null;
+  private coreOrchestrator: CoreOrchestrator;
+  private coreTaskManager: TaskManager;
   private currentTaskId: string | null = null;
   private maxRounds: number = 3;
   private timeoutPerRound: number = 30000;
@@ -70,6 +75,8 @@ export class DiscussionOrchestrator {
 
   constructor(bus: MessageBus, wsHandler: WsHandler | null = null) {
     this.bus = bus;
+    this.coreTaskManager = new TaskManager();
+    this.coreOrchestrator = new CoreOrchestrator(bus, this.coreTaskManager);
     this.instanceManager = new InstanceManager();
     this.wsHandler = wsHandler;
   }
@@ -80,9 +87,23 @@ export class DiscussionOrchestrator {
   ): Promise<ConsensusResult> {
     this.maxRounds = 3; // 固定最多 3 轮
     this.timeoutPerRound = config.timeoutPerRound ?? 30000;
+    const totalNodes = config.nodes.reduce((sum, n) => sum + n.count, 0);
+    this.consensusEngine = new ConsensusEngine(totalNodes);
 
     const taskId = config.taskId ?? `task-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     this.currentTaskId = taskId;
+
+    // Register task in core lifecycle
+    const roleLabels = config.nodes.map((n, i) => config.roles?.[i] || n.type);
+    const coreTask = this.coreTaskManager.createTask({
+      title: task.slice(0, 100),
+      description: task,
+      assignedNodes: roleLabels,
+    });
+    // Swap generated ID with our preferred taskId
+    (coreTask as any).id = taskId;
+    this.coreTaskManager['tasks'].delete(coreTask.id);
+    this.coreTaskManager['tasks'].set(taskId, coreTask);
 
     const history: DiscussionHistory = {
       taskId,
@@ -94,9 +115,10 @@ export class DiscussionOrchestrator {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    // Override with same ID
+    history.taskId = taskId;
     this.discussions.set(taskId, history);
 
-    const roleLabels = config.nodes.map((n, i) => config.roles?.[i] || n.type);
     this.notifyTaskUpdate(taskId, {
       id: taskId,
       title: task.slice(0, 50),
@@ -109,16 +131,16 @@ export class DiscussionOrchestrator {
 
     const instances = await this.instanceManager.spawnInstances(config.nodes);
 
-    // Sequential turn-based discussion (max 3 rounds)
     let allMessages: Message[] = [];
     let hasConsensus = false;
+
+    this.coreOrchestrator.startTask(taskId);
 
     for (let round = 1; round <= this.maxRounds; round++) {
       this.notifyTaskUpdate(taskId, { round, maxRounds: this.maxRounds });
 
-      for (let i = 0; i < instances.length; i++) {
-        const instance = instances[i];
-        const isFirstResponder = i === 0; // 第一个实例负责总结
+      // Parallel round: run all instances concurrently
+      const roundResults = await Promise.all(instances.map((instance, i) => {
         const prompt = this.buildSequentialPrompt(
           task,
           allMessages,
@@ -126,30 +148,33 @@ export class DiscussionOrchestrator {
           round,
           config.roles?.[i],
           config.prompts?.[i],
-          isFirstResponder,
+          i === 0,
           roleLabels
         );
 
-        try {
-          const message = await this.executeAndCapture(taskId, instance, prompt, round);
-          allMessages.push(message);
-          history.messages.push(message);
-          history.updatedAt = new Date().toISOString();
-          saveDiscussion(history);
-        } catch (error) {
+        return this.executeAndCapture(taskId, instance, prompt, round).catch((error) => {
           console.error(`Instance ${instance.id} failed in round ${round}:`, error);
-        }
-      }
+          return null as unknown as Message;
+        });
+      }));
 
-      // 检查是否已达成共识（第 2 轮之后可以判断）
-      if (round >= 2) {
-        const roundMessages = allMessages.filter(m => m.round === round);
-        const prevRoundMessages = allMessages.filter(m => m.round === round - 1);
-        if (this.hasReachedConsensus(roundMessages, prevRoundMessages)) {
+      const validResults = roundResults.filter((m): m is Message => m !== null);
+      allMessages.push(...validResults);
+      history.messages.push(...validResults);
+      history.updatedAt = new Date().toISOString();
+      saveDiscussion(history);
+
+      // Consensus check via ConsensusEngine (round 2+)
+      if (round >= 2 && validResults.length > 0 && this.consensusEngine) {
+        const ceResult = this.evaluateWithConsensusEngine(validResults, allMessages.filter(m => m.round === round - 1), round);
+        if (ceResult.consensus) {
+          this.coreOrchestrator.transitionTo(taskId, 'decided');
           hasConsensus = true;
           break;
         }
       }
+
+      this.coreOrchestrator.transitionTo(taskId, 'discussing');
     }
 
     // 由第一个回答方（第一个实例）进行总结
@@ -191,6 +216,8 @@ export class DiscussionOrchestrator {
       this.bus.publish(summaryMessage);
       this.notifyTaskUpdate(taskId, { status: 'completed', consensus: summaryOutput, hasConsensus });
 
+      this.coreOrchestrator.transitionTo(taskId, 'completed');
+
       return {
         proposal: summaryOutput,
         allProposals: allMessages,
@@ -218,18 +245,59 @@ export class DiscussionOrchestrator {
 
       this.bus.publish(fallbackMessage);
       this.notifyTaskUpdate(taskId, { status: 'completed', consensus: fallback });
+
+      this.coreOrchestrator.transitionTo(taskId, 'failed');
+
       return { proposal: fallback, allProposals: allMessages, taskId };
     }
   }
 
-  private hasReachedConsensus(currentRound: Message[], previousRound: Message[]): boolean {
-    if (currentRound.length === 0 || previousRound.length === 0) return false;
-    // 简单判断：如果当前轮次的关键观点与上一轮高度相似，认为达成共识
-    const currentContent = currentRound.map(m => m.content.toLowerCase()).join(' ');
-    const prevContent = previousRound.map(m => m.content.toLowerCase()).join(' ');
-    // 这里使用简单的启发式判断 - 实际项目中可以用更复杂的算法
-    return currentContent.includes('agree') || prevContent.includes('agree') ||
-           currentContent.includes('共识') || prevContent.includes('共识');
+  private evaluateWithConsensusEngine(
+    currentRoundMessages: Message[],
+    previousRoundMessages: Message[],
+    round: number
+  ): CoreConsensusResult {
+    if (!this.consensusEngine || currentRoundMessages.length === 0) {
+      return { winnerId: null, consensus: false, round } satisfies CoreConsensusResult;
+    }
+
+    // Build Vote array from explicit cross-references and self-votes
+    const votesByNode: Map<string, Set<string>> = new Map();
+
+    // Self-votes
+    for (const msg of currentRoundMessages) {
+      if (!votesByNode.has(msg.fromNode)) {
+        votesByNode.set(msg.fromNode, new Set());
+      }
+      votesByNode.get(msg.fromNode)!.add(msg.id);
+    }
+
+    // Detect cross-agreement
+    const agreementPatterns = ['i agree', 'i concur', '+1', '同意', '赞同', '支持', '认可', 'agreed', 'second'];
+    for (const msg of currentRoundMessages) {
+      const lower = msg.content.toLowerCase();
+      const mentionsAgreement = agreementPatterns.some(p => lower.includes(p));
+
+      if (mentionsAgreement) {
+        for (const prev of previousRoundMessages) {
+          const namePatterns = [prev.fromNode.toLowerCase(), prev.fromNode.split('-').pop() || ''];
+          const nameMatch = namePatterns.some(n => n.length > 1 && lower.includes(n));
+          if (nameMatch) {
+            votesByNode.get(msg.fromNode)?.add(prev.id);
+          }
+        }
+      }
+    }
+
+    const votes = Array.from(votesByNode.entries()).flatMap(([nodeId, proposalIds]) =>
+      Array.from(proposalIds).map(proposalMessageId => ({
+        nodeId,
+        taskId: currentRoundMessages[0].taskId,
+        proposalMessageId,
+      }))
+    );
+
+    return this.consensusEngine.evaluate(currentRoundMessages, votes, round, this.maxRounds);
   }
 
   async continueDiscussion(taskId: string, userMessage: string): Promise<ConsensusResult> {
@@ -259,8 +327,8 @@ export class DiscussionOrchestrator {
     const instances = await this.instanceManager.spawnInstances(history.config.nodes);
     const round = userMsg.round!;
 
-    for (let i = 0; i < instances.length; i++) {
-      const instance = instances[i];
+    // Parallel responses for continue
+    await Promise.all(instances.map(async (instance, i) => {
       const prompt = this.buildSequentialPrompt(
         history.task,
         history.messages,
@@ -269,15 +337,16 @@ export class DiscussionOrchestrator {
         history.config.roles?.[i]
       );
 
-      try {
-        const message = await this.executeAndCapture(taskId, instance, prompt, round);
-        history.messages.push(message);
-        history.updatedAt = new Date().toISOString();
-        saveDiscussion(history);
-      } catch (error) {
+      const message = await this.executeAndCapture(taskId, instance, prompt, round).catch((error) => {
         console.error(`Instance ${instance.id} failed:`, error);
+        return null as unknown as Message;
+      });
+      if (message) {
+        history.messages.push(message);
       }
-    }
+    }));
+    history.updatedAt = new Date().toISOString();
+    saveDiscussion(history);
 
     return {
       proposal: '',
@@ -473,5 +542,6 @@ Present this clearly so the user can make an informed decision.`;
 
   cleanup(): void {
     this.instanceManager.cleanup();
+    this.consensusEngine = null;
   }
 }
