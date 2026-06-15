@@ -43,7 +43,9 @@ describe('InstanceManager', () => {
 
     // All instances share the same project directory for authentication
     expect(instances[0].workDir).toBe(instances[1].workDir);
-    expect(instances[0].workDir).toContain('ai-cli-link');
+    // Should use a non-temp directory (project root) so CLI auth is preserved
+    expect(instances[0].workDir).not.toContain('/tmp/');
+    expect(instances[0].workDir).not.toContain('/temp/');
   });
 
   it('should not delete project directory on cleanup', async () => {
